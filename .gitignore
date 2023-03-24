@@ -3,7 +3,6 @@
 
 # Custom
 build/
-compile_commands.json
 
 # Borrowed from https://github.com/github/.gitignore {{{
 

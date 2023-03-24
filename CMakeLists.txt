@@ -1,33 +1,46 @@
 cmake_minimum_required(VERSION 3.10)
 project(stackchat.cpp)
 
-set (CMAKE_CXX_STANDARD 20)
-
-set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
-
-if(NOT EXISTS "${CMAKE_BINARY_DIR}/conan.cmake")
-  message(STATUS "Downloading conan.cmake from https://github.com/conan-io/cmake-conan")
-  file(DOWNLOAD "https://raw.githubusercontent.com/conan-io/cmake-conan/0.18.1/conan.cmake"
-                "${CMAKE_BINARY_DIR}/conan.cmake"
-                TLS_VERIFY ON)
+if (CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
+    message (STATUS "stackchat.cpp: Running standalone")
+    set (ENABLE_DEMOS ON)
+else()
+    message (STATUS "stackchat.cpp: Running as a submodule; disabling demos.")
+    set (ENABLE_DEMOS OFF)
 endif()
 
-include(${CMAKE_BINARY_DIR}/conan.cmake)
+set (CMAKE_CXX_STANDARD 20)
 
-conan_cmake_configure (REQUIRES 
-                        cpr/1.10.1
-                        nlohmann_json/3.11.2
-                        ixwebsocket/11.4.3
-                        GENERATORS cmake)
-conan_cmake_autodetect (settings)
-conan_cmake_install (PATH_OR_REFERENCE . BUILD missing SETTINGS ${settings})
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+set(SPDLOG_FMT_EXTERNAL ON CACHE STRING "" FORCE)
+set(CURL_ZLIB "AUTO" CACHE STRING "" FORCE)
 
-include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
-conan_basic_setup()
+include(FetchContent)
+FetchContent_Declare(fmt GIT_REPOSITORY https://github.com/fmtlib/fmt.git
+    GIT_TAG 9.1.0)
+FetchContent_MakeAvailable(fmt)
+
+include(FetchContent)
+FetchContent_Declare(cpr GIT_REPOSITORY https://github.com/libcpr/cpr.git
+    GIT_TAG 1.10.0)
+FetchContent_MakeAvailable(cpr)
+
+FetchContent_Declare(nlohmann GIT_REPOSITORY https://github.com/nlohmann/json
+    GIT_TAG v3.11.2)
+FetchContent_MakeAvailable(nlohmann)
+
+FetchContent_Declare(spdlog GIT_REPOSITORY https://github.com/gabime/spdlog
+    GIT_TAG v1.11.0)
+FetchContent_MakeAvailable(spdlog)
+
+FetchContent_Declare(ixwebsocket GIT_REPOSITORY https://github.com/machinezone/IXWebSocket
+    GIT_TAG v11.4.3)
+FetchContent_MakeAvailable(ixwebsocket)
 
 add_subdirectory(src)
+if (ENABLE_DEMOS)
+    add_subdirectory(demo)
+endif()
 #add_subdirectory(tests)
 
 #add_custom_target(test

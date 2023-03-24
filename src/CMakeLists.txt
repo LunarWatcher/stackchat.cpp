@@ -3,8 +3,8 @@ add_library(stackchat
 )
 
 target_include_directories(stackchat PUBLIC ./)
-target_include_directories(stackchat PUBLIC ${CONAN_INCLUDE_DIRS})
 
-target_link_libraries(stackchat ${CONAN_LIBS})
+target_link_libraries(stackchat PUBLIC cpr::cpr nlohmann_json::nlohmann_json
+    spdlog::spdlog ixwebsocket::ixwebsocket)
 
 # vim:ft=cmake

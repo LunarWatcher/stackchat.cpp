@@ -4,6 +4,8 @@ add_library(stackchat
     stackchat/rooms/Room.cpp
 
     stackchat/web/MTSession.cpp
+
+    stackchat/json/Deserialisers.cpp
 )
 
 target_include_directories(stackchat PUBLIC ./)

@@ -11,8 +11,11 @@
 #include "cpr/cookies.h"
 #include "cpr/response.h"
 #include "stackchat/Site.hpp"
+#include "stackchat/rooms/Room.hpp"
 #include "stackchat/rooms/StackSite.hpp"
 #include "stackchat/web/MTSession.hpp"
+#include "chat/ChatEvent.hpp"
+#include <functional>
 
 namespace stackchat {
 
@@ -28,6 +31,9 @@ struct ChatConfig {
 class StackChat {
 private:
     static inline auto logger = spdlog::stdout_color_mt("StackChat");
+
+    std::map<ChatEvent::Code, std::function<Room(ChatEvent)>> messageListeners;
+    std::map<std::string, std::function<Room(ChatEvent)>> commandListeners;
 public:
     std::map<StackSite, Site> sites;
     ChatConfig conf;

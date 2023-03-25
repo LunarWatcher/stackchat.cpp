@@ -14,55 +14,59 @@ Room::Room(StackChat* chat, StackSite site, unsigned int rid) : chat(chat), site
     auto& siteInfo = chat->sites.at(site);
 
     webSocket.setUrl(getWSUrl(siteInfo.fkey));
+    webSocket.setExtraHeaders({{"Origin", chat->br.chatUrl(site)}});
     webSocket.setOnMessageCallback([](const ix::WebSocketMessagePtr& msg) {
         if (msg->type == ix::WebSocketMessageType::Message) {
             std::cout << "received message: " << msg->str << std::endl;
-            std::cout << "> " << std::flush;
+        } else if (msg->type == ix::WebSocketMessageType::Open) {
+            std::cout << "Connection established" << std::endl;
+        } else if (msg->type == ix::WebSocketMessageType::Error) {
+            // Maybe SSL is not configured properly
+            std::cout << "Connection error: " << msg->errorInfo.reason << std::endl;
+            std::cout << "received message: " << msg->str << std::endl;
         }
     });
+    webSocket.start();
 
 }
 
 std::string Room::getWSUrl(const std::string& fkey) {
-    //auto timeReq = cpr::Post(
-        //cpr::Verbose(),
-        //cpr::Body{
-            //nlohmann::json{
-                //{"fkey", fkey}
-            //}.dump()
-        //},
-        //cpr::Header{{"Referer", "https://chat.stackoverflow.com/rooms/1/sandbox"}},
-        //chat->cookies, chat->conf.userAgent,
-        //cpr::Url(fmt::format("https://chat.{}/chats/{}/events", siteUrlMap[site], rid))
-    //);
+    auto timeReq = chat->br.Post(
+        cpr::Verbose(),
+        cpr::Payload{
+            {"since", "0"},
+            {"mode", "Messages"},
+            {"msgCount", "100"},
+            {"fkey", fkey}
+        },
+        chat->conf.userAgent,
+        cpr::Url(fmt::format("https://chat.{}/chats/{}/events", siteUrlMap[site], rid))
+    );
 
-    //if (timeReq.status_code == 500) {
-        //throw std::runtime_error("Stack failed to return a timestamp: internal error (details unknown)");
-    //}
+    if (timeReq.status_code == 500) {
+        throw std::runtime_error("Stack failed to return a timestamp: internal error (details unknown)");
+    }
 
-    //std::string time = std::to_string(nlohmann::json::parse(
-            //timeReq.text
-    //).at("time").get<long long>());
+    std::string time = std::to_string(nlohmann::json::parse(
+            timeReq.text
+    ).at("time").get<long long>());
 
-    auto wsUrlReq = cpr::Post(
+    auto wsUrlReq = chat->br.Post(
         cpr::Verbose{},
         cpr::Url {fmt::format("https://chat.{}/ws-auth", siteUrlMap[site])},
-        //cpr::Payload {
-            //{"fkey", fkey},
-            //{"roomid", std::to_string(rid)}
-        //}, 
-        cpr::Body{"fkey=" + fkey + "&roomid=" + std::to_string(rid)},
-
-
-        chat->cookies, chat->conf.userAgent);
+        cpr::Payload {
+            {"fkey", fkey},
+            {"roomid", std::to_string(rid)}
+        }, 
+        chat->conf.userAgent);
     
     if (wsUrlReq.status_code == 404) {
         throw std::runtime_error("Received 404: library bug or Stack is struggling: " + wsUrlReq.text);
-    } else {
+    } else if (wsUrlReq.status_code != 200 && wsUrlReq.status_code != 302){
         throw std::runtime_error("Unexpected server-sided error: " + wsUrlReq.text);
     }
     return nlohmann::json::parse(wsUrlReq.text)
-        .at("url").get<std::string>() + "?l=999999999999999";
+        .at("url").get<std::string>() + "?l=" + time;
 }
 
 }

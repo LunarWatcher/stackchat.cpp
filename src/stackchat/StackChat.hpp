@@ -10,6 +10,7 @@
 
 #include "stackchat/Site.hpp"
 #include "stackchat/rooms/StackSite.hpp"
+#include "stackchat/web/Browser.hpp"
 
 namespace stackchat {
 
@@ -18,8 +19,7 @@ struct ChatConfig {
     std::string password;
 
     std::string prefix = "";
-    cpr::UserAgent userAgent = "StackChatUnannouncedUser/git";
-
+    cpr::UserAgent userAgent = "StackChatCppUnannouncedUser/git";
 };
 
 class StackChat {
@@ -29,14 +29,15 @@ private:
 
 public:
     std::map<StackSite, Site> sites;
-    cpr::Cookies cookies{{{"x", "0"}}, false};
+    Browser br;
     ChatConfig conf;
 
     StackChat(const ChatConfig& conf);
 
     void login(StackSite site);
-
     void join(StackSite site, unsigned int rid);
+
+
 };
 
 }

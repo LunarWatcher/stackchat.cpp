@@ -12,8 +12,10 @@ endif()
 set (CMAKE_CXX_STANDARD 20)
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
 set(SPDLOG_FMT_EXTERNAL ON CACHE STRING "" FORCE)
 set(CURL_ZLIB "AUTO" CACHE STRING "" FORCE)
+set(USE_TLS ON CACHE STRING "" FORCE)
 
 include(FetchContent)
 FetchContent_Declare(fmt GIT_REPOSITORY https://github.com/fmtlib/fmt.git

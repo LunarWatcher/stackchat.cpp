@@ -2,6 +2,8 @@ add_library(stackchat
     stackchat/StackChat.cpp
 
     stackchat/rooms/Room.cpp
+
+    stackchat/web/Browser.cpp
 )
 
 target_include_directories(stackchat PUBLIC ./)

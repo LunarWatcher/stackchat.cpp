@@ -8,7 +8,7 @@ namespace stackchat {
 class StackChat;
 class Room {
 public:
-    const StackChat* chat;
+    StackChat* chat;
     const StackSite site;
     const unsigned int rid;
     ix::WebSocket webSocket;

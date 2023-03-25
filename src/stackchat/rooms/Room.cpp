@@ -26,7 +26,7 @@ Room::Room(StackChat* chat, StackSite site, unsigned int rid) : chat(chat), site
             std::cout << "received message: " << msg->str << std::endl;
         }
     });
-    webSocket.run();
+    webSocket.start();
 
 }
 

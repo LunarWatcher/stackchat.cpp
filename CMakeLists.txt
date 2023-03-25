@@ -22,7 +22,7 @@ FetchContent_MakeAvailable(fmt)
 
 include(FetchContent)
 FetchContent_Declare(cpr GIT_REPOSITORY https://github.com/libcpr/cpr.git
-    GIT_TAG 1.10.0)
+    GIT_TAG 1.10.1)
 FetchContent_MakeAvailable(cpr)
 
 FetchContent_Declare(nlohmann GIT_REPOSITORY https://github.com/nlohmann/json

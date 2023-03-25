@@ -1,6 +1,7 @@
 #pragma once
 
 #include "stackchat/rooms/Room.hpp"
+#include "stackchat/web/MTSession.hpp"
 
 #include <string>
 #include <map>
@@ -15,6 +16,9 @@ struct Site {
     std::string username;
 
     std::map<unsigned int, std::shared_ptr<Room>> rooms;
+
+    MTSession authSess;
+    cpr::Cookies cookies{false};
 };
 
 }

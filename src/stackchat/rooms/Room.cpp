@@ -13,25 +13,24 @@ namespace stackchat {
 Room::Room(StackChat* chat, StackSite site, unsigned int rid) : chat(chat), site(site), rid(rid) {
     auto& siteInfo = chat->sites.at(site);
 
+    sess.setCookies(siteInfo.cookies);
     webSocket.setUrl(getWSUrl(siteInfo.fkey));
-    webSocket.setExtraHeaders({{"Origin", chat->br.chatUrl(site)}});
+    webSocket.setExtraHeaders({{"Origin", chat->chatUrl(site)}});
     webSocket.setOnMessageCallback([](const ix::WebSocketMessagePtr& msg) {
         if (msg->type == ix::WebSocketMessageType::Message) {
             std::cout << "received message: " << msg->str << std::endl;
         } else if (msg->type == ix::WebSocketMessageType::Open) {
             std::cout << "Connection established" << std::endl;
         } else if (msg->type == ix::WebSocketMessageType::Error) {
-            // Maybe SSL is not configured properly
-            std::cout << "Connection error: " << msg->errorInfo.reason << std::endl;
-            std::cout << "received message: " << msg->str << std::endl;
+            // TODO: start reconnect attempt
         }
     });
+    webSocket.disableAutomaticReconnection();
     webSocket.start();
-
 }
 
 std::string Room::getWSUrl(const std::string& fkey) {
-    auto timeReq = chat->br.Post(
+    auto timeReq = sess.Post(
         cpr::Payload{
             {"since", "0"},
             {"mode", "Messages"},
@@ -50,7 +49,7 @@ std::string Room::getWSUrl(const std::string& fkey) {
             timeReq.text
     ).at("time").get<long long>());
 
-    auto wsUrlReq = chat->br.Post(
+    auto wsUrlReq = sess.Post(
         cpr::Url {fmt::format("https://chat.{}/ws-auth", siteUrlMap[site])},
         cpr::Payload {
             {"fkey", fkey},

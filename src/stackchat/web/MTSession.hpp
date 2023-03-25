@@ -1,0 +1,33 @@
+#pragma once
+
+#include <cpr/cpr.h>
+
+namespace stackchat {
+
+class MTSession {
+public:
+    std::mutex m;
+    cpr::Session sess;
+
+    template <typename... Ts>
+    cpr::Response Get(Ts&&... ts) {
+        std::lock_guard<std::mutex> lock(m);
+        cpr::priv::set_option(sess, std::forward<Ts>(ts)...);
+        
+        auto res = sess.Get();
+        return res;
+    }
+
+    template <typename... Ts>
+    cpr::Response Post(Ts&&... ts) {
+        std::lock_guard<std::mutex> lock(m);
+        cpr::priv::set_option(sess, std::forward<Ts>(ts)...);
+        
+        auto res = sess.Post();
+        return res;
+    }
+
+    void setCookies(cpr::Cookies& cookies);
+};
+
+}

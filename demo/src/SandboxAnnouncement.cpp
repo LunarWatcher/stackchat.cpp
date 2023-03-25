@@ -16,5 +16,8 @@ int main() {
     });
 
     chat.join(stackchat::StackSite::STACKOVERFLOW, 1);
+    chat.join(stackchat::StackSite::STACKEXCHANGE, 144870);
+
+    chat.block();
 }
 

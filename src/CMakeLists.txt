@@ -3,7 +3,7 @@ add_library(stackchat
 
     stackchat/rooms/Room.cpp
 
-    stackchat/web/Browser.cpp
+    stackchat/web/MTSession.cpp
 )
 
 target_include_directories(stackchat PUBLIC ./)

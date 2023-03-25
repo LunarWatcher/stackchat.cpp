@@ -12,7 +12,7 @@ int main() {
     stackchat::StackChat chat({
         .email = email,
         .password = password,
-        .userAgent = "StackChatCppDemos/git"
+        .userAgent = "StackChatCppDemos/git (+https://github.com/LunarWatcher/stackchat.cpp)"
     });
 
     chat.join(stackchat::StackSite::STACKOVERFLOW, 1);

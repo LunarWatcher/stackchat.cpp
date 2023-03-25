@@ -26,13 +26,12 @@ Room::Room(StackChat* chat, StackSite site, unsigned int rid) : chat(chat), site
             std::cout << "received message: " << msg->str << std::endl;
         }
     });
-    webSocket.start();
+    webSocket.run();
 
 }
 
 std::string Room::getWSUrl(const std::string& fkey) {
     auto timeReq = chat->br.Post(
-        cpr::Verbose(),
         cpr::Payload{
             {"since", "0"},
             {"mode", "Messages"},
@@ -52,7 +51,6 @@ std::string Room::getWSUrl(const std::string& fkey) {
     ).at("time").get<long long>());
 
     auto wsUrlReq = chat->br.Post(
-        cpr::Verbose{},
         cpr::Url {fmt::format("https://chat.{}/ws-auth", siteUrlMap[site])},
         cpr::Payload {
             {"fkey", fkey},

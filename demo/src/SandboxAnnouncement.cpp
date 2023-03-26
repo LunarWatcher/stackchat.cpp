@@ -22,7 +22,9 @@ int main() {
     });
 
     chat.join(stackchat::StackSite::STACKOVERFLOW, 1);
-    chat.sendTo(stackchat::StackSite::STACKOVERFLOW, 1, "Chat login is horrible. *angry fox noises*");
+    for (int i = 0; i < 5; ++i) {
+        chat.sendTo(stackchat::StackSite::STACKOVERFLOW, 1, "Force rate limit attempt " + std::to_string(i));
+    }
 
     chat.block();
 }

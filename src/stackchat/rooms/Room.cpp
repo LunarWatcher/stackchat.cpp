@@ -42,19 +42,45 @@ Room::Room(StackChat* chat, StackSite site, unsigned int rid) : chat(chat), site
     });
     webSocket.setMinWaitBetweenReconnectionRetries(20000); // Note: in millis
     // TODO: figure out if I have to disable automatic reconnects or not.
+    // Really hinges on whether the URL remains valid or not. Could probably check what chatexchange does
     webSocket.start();
 
     logger->info("Listening to room.");
 }
 
 void Room::sendMessage(const std::string& content) {
-    sess.Post(
-        cpr::Url{fmt::format("{}/chats/{}/messages/new", chat->chatUrl(site), rid)},
-        cpr::Payload{
-            {"fkey", chat->sites[site].fkey},
-            {"text", content}
+    int count = 0;
+    do {
+        auto res = sess.Post(
+            cpr::Url{fmt::format("{}/chats/{}/messages/new", chat->chatUrl(site), rid)},
+            cpr::Payload{
+                {"fkey", chat->sites[site].fkey},
+                {"text", content}
+            }
+        );
+        if (res.text.find("You can perform this action again in") != std::string::npos) {
+            int inPos = res.text.find(" in ") + 3;
+            int limit = std::stoi(res.text.substr(inPos));
+
+            logger->warn("Rate limited for {} seconds in {} ({})", limit, rid, siteUrlMap[site]);
+            // Add one second for good measure. Stack's rounding is notoriously bad
+            std::this_thread::sleep_for(std::chrono::seconds(limit + 1));
+        } else if (res.text.find("You need 20 reputation points") != std::string::npos) {
+            logger->error("Not enough rep to post {} ({})", rid, siteUrlMap[site]);
+            return;
+        } else if (res.text.find("This room has been frozen") != std::string::npos) {
+            logger->error("Room {} ({}) is frozen", rid, siteUrlMap[site]);
+            return;
+        } else if (res.text.find("The room does not exist") != std::string::npos) {
+            logger->error("Room {} ({}) doesn't exist", rid, siteUrlMap[site]);
+            return;
+        } else {
+            logger->info("Sent {} to {} ({})", content, rid, siteUrlMap[site]);
+            return;
         }
-    );
+
+        count++;
+    } while (count < 5);
 }
 
 std::string Room::getWSUrl(const std::string& fkey) {

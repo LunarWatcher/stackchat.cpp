@@ -9,6 +9,10 @@ public:
     std::mutex m;
     cpr::Session sess;
 
+    MTSession() {
+        sess.SetAcceptEncoding({cpr::AcceptEncodingMethods::gzip, cpr::AcceptEncodingMethods::zlib, cpr::AcceptEncodingMethods::deflate});
+    }
+
     template <typename... Ts>
     cpr::Response Get(Ts&&... ts) {
         std::lock_guard<std::mutex> lock(m);

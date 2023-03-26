@@ -7,6 +7,7 @@
 
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/stdout_color_sinks.h>
+#include "stackchat/chat/ChatEvent.hpp"
 
 namespace stackchat {
 
@@ -26,6 +27,7 @@ public:
     Room(StackChat* chat, StackSite site, unsigned int rid);
 
     void sendMessage(const std::string& content);
+    void reply(ChatEvent& ev);
 
     std::string getWSUrl(const std::string& fkey);
 };

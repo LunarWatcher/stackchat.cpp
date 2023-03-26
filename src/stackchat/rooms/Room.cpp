@@ -3,30 +3,58 @@
 #include "cpr/cpr.h"
 #include "cpr/cprtypes.h"
 #include "cpr/verbose.h"
+#include "fmt/core.h"
 #include "nlohmann/json.hpp"
+#include "spdlog/sinks/stdout_color_sinks.h"
 #include "stackchat/StackChat.hpp"
+#include "stackchat/chat/ChatEvent.hpp"
 // Temporary
 #include <iostream>
 
 namespace stackchat {
 
 Room::Room(StackChat* chat, StackSite site, unsigned int rid) : chat(chat), site(site), rid(rid) {
+    logger = spdlog::stdout_color_mt("room-" + std::to_string(rid));
     auto& siteInfo = chat->sites.at(site);
 
     sess.setCookies(siteInfo.cookies);
     webSocket.setUrl(getWSUrl(siteInfo.fkey));
     webSocket.setExtraHeaders({{"Origin", chat->chatUrl(site)}});
-    webSocket.setOnMessageCallback([](const ix::WebSocketMessagePtr& msg) {
+    webSocket.setOnMessageCallback([this](const ix::WebSocketMessagePtr& msg) {
         if (msg->type == ix::WebSocketMessageType::Message) {
-            std::cout << "received message: " << msg->str << std::endl;
-        } else if (msg->type == ix::WebSocketMessageType::Open) {
-            std::cout << "Connection established" << std::endl;
+            nlohmann::json ev = nlohmann::json::parse(msg->str);
+            if (!ev.contains("r" + std::to_string(this->rid))) {
+                return;
+            }
+            auto roomEvents = ev["r" + std::to_string(this->rid)];
+            if (!roomEvents.contains("e")) {
+                return;
+            }
+
+            for (auto& event : roomEvents.at("e")) {
+                ChatEvent evObj = event.get<ChatEvent>();
+                this->chat->broadcast(*this, evObj);
+            }
+
         } else if (msg->type == ix::WebSocketMessageType::Error) {
-            // TODO: start reconnect attempt
+            logger->error("Error occurred: {}", msg->errorInfo.reason);
         }
     });
-    webSocket.disableAutomaticReconnection();
+    webSocket.setMinWaitBetweenReconnectionRetries(20000); // Note: in millis
+    // TODO: figure out if I have to disable automatic reconnects or not.
     webSocket.start();
+
+    logger->info("Listening to room.");
+}
+
+void Room::sendMessage(const std::string& content) {
+    sess.Post(
+        cpr::Url{fmt::format("{}/chats/{}/messages/new", chat->chatUrl(site), rid)},
+        cpr::Payload{
+            {"fkey", chat->sites[site].fkey},
+            {"text", content}
+        }
+    );
 }
 
 std::string Room::getWSUrl(const std::string& fkey) {
@@ -65,5 +93,6 @@ std::string Room::getWSUrl(const std::string& fkey) {
     return nlohmann::json::parse(wsUrlReq.text)
         .at("url").get<std::string>() + "?l=" + time;
 }
+
 
 }

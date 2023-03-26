@@ -11,6 +11,6 @@ add_library(stackchat
 target_include_directories(stackchat PUBLIC ./)
 
 target_link_libraries(stackchat PUBLIC cpr::cpr nlohmann_json::nlohmann_json
-    spdlog::spdlog ixwebsocket::ixwebsocket)
+    spdlog::spdlog ixwebsocket::ixwebsocket stc)
 
 # vim:ft=cmake

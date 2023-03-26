@@ -5,6 +5,7 @@
 #include <nlohmann/json.hpp>
 #include <ixwebsocket/IXNetSystem.h>
 #include <iostream>
+#include <stc/StringUtil.hpp>
 
 namespace stackchat {
 
@@ -72,7 +73,7 @@ void StackChat::login(StackSite site) {
 }
 
 void StackChat::join(StackSite site, unsigned int rid) {
-    if (!sites.contains(site)) {
+    if (!sites[site].fkey.size()) {
         login(site);
     }
     // TODO: check if joined already
@@ -101,6 +102,17 @@ void StackChat::reloadFKey(StackSite site) {
     sites[site].fkey = fkey;
 }
 
+void StackChat::sendTo(StackSite site, unsigned int rid, const std::string& content) {
+    auto& siteInfo = sites[site];
+    auto& rooms = siteInfo.rooms;
+    if (!rooms.contains(rid) || rooms.at(rid) == nullptr) {
+        throw std::runtime_error("Room not joined.");
+    }
+
+    rooms.at(rid)->sendMessage(content);
+}
+
+
 void StackChat::setCookies(const cpr::Response &res, StackSite site) {
     auto& s = sites[site];
     auto& cookies = s.cookies;
@@ -110,6 +122,35 @@ void StackChat::setCookies(const cpr::Response &res, StackSite site) {
         cookies.push_back(cookie);
     }
     authSess.setCookies(cookies);
+}
+
+void StackChat::registerCommand(std::string commandName, CommandCallback func) {
+    commandCallbacks[commandName] = func;
+}
+void StackChat::registerEventListener(ChatEvent::Code ev, EventCallback func) {
+
+}
+
+void StackChat::broadcast(Room& r, ChatEvent &ev) {
+    if (conf.prefix != "" && (ev.type == ChatEvent::Code::EDIT || ev.type == ChatEvent::Code::NEW_MESSAGE)) {
+        auto& content = ev.messageEvent.content;
+
+        // TODO: Complex command structures (maybe not here, could maybe do a new class. Not sure, TBD)
+        if (content.starts_with(conf.prefix)) {
+            auto stripPrefix = content.substr(conf.prefix.size());
+            if (stripPrefix.size() != 0) {
+                std::vector<std::string> split = stc::string::split(stripPrefix, ' ', 1);
+                auto cmd = split[0];
+                std::string arg = split.size() == 1 ? "" : split[1];
+
+                if (commandCallbacks.contains(cmd)) {
+                    commandCallbacks.at(cmd)(r, ev, arg);
+                }
+
+            }
+        }
+
+    }
 }
 
 }

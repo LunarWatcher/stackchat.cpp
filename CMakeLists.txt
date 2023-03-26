@@ -39,6 +39,9 @@ FetchContent_Declare(ixwebsocket GIT_REPOSITORY https://github.com/machinezone/I
     GIT_TAG v11.4.3)
 FetchContent_MakeAvailable(ixwebsocket)
 
+FetchContent_Declare(stc GIT_REPOSITORY https://github.com/LunarWatcher/stc)
+FetchContent_MakeAvailable(stc)
+
 add_subdirectory(src)
 if (ENABLE_DEMOS)
     add_subdirectory(demo)

@@ -1,5 +1,7 @@
 #include <nlohmann/json.hpp>
 
+#include <spdlog/spdlog.h>
+
 #include "stackchat/chat/ChatEvent.hpp"
 
 #define COND_AT(field, dest) if (j.contains(field)) { \
@@ -9,9 +11,15 @@
 namespace stackchat {
 
 void from_json(const nlohmann::json& j, ChatEvent &ev) {
-    ev.type = static_cast<ChatEvent::Code>(j.at("event_type").get<int>());
+    try {
+        ev.type = static_cast<ChatEvent::Code>(j.at("event_type").get<int>());
+    } catch (...) {
+        ev.type = ChatEvent::Code::UNKNOWN;
+        spdlog::warn("Unknown event detected: {}", j.dump());
+        return;
+    }
 
-    j.at("timestamp").get_to(ev.timestamp);
+    j.at("time_stamp").get_to(ev.timestamp);
     j.at("id").get_to(ev.event_id);
 
 

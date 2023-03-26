@@ -26,14 +26,19 @@ struct ChatConfig {
     std::string prefix = "";
     cpr::UserAgent userAgent = "StackChatCppUnannouncedUser/git";
 
+    bool ignoreSelf = true;
+
 };
+
+using EventCallback = std::function<void(Room&, const ChatEvent&)>;
+using CommandCallback = std::function<void(Room&, const ChatEvent&, const std::string& args)>;
 
 class StackChat {
 private:
     static inline auto logger = spdlog::stdout_color_mt("StackChat");
 
-    std::map<ChatEvent::Code, std::function<Room(ChatEvent)>> messageListeners;
-    std::map<std::string, std::function<Room(ChatEvent)>> commandListeners;
+    std::map<ChatEvent::Code, std::vector<EventCallback>> eventListeners;
+    std::map<std::string, CommandCallback> commandCallbacks;
 public:
     std::map<StackSite, Site> sites;
     ChatConfig conf;
@@ -46,6 +51,13 @@ public:
 
     void reloadFKey(StackSite site);
     void setCookies(const cpr::Response& res, StackSite site);
+
+    void sendTo(StackSite site, unsigned int rid, const std::string& content);
+
+    void registerCommand(std::string commandName, CommandCallback func);
+    void registerEventListener(ChatEvent::Code ev, EventCallback func);
+
+    void broadcast(Room& r, ChatEvent& ev);
 
     std::string chatUrl(StackSite site) {
         return fmt::format("https://chat.{}", siteUrlMap.at(site));

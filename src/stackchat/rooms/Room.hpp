@@ -26,8 +26,8 @@ public:
 
     Room(StackChat* chat, StackSite site, unsigned int rid);
 
-    void sendMessage(const std::string& content);
-    void reply(ChatEvent& ev);
+    long long sendMessage(const std::string& content);
+    long long reply(const ChatEvent& ev, const std::string& content);
 
     std::string getWSUrl(const std::string& fkey);
 };

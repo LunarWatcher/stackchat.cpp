@@ -48,7 +48,7 @@ Room::Room(StackChat* chat, StackSite site, unsigned int rid) : chat(chat), site
     logger->info("Listening to room.");
 }
 
-void Room::sendMessage(const std::string& content) {
+long long Room::sendMessage(const std::string& content) {
     int count = 0;
     do {
         auto res = sess.Post(
@@ -67,20 +67,27 @@ void Room::sendMessage(const std::string& content) {
             std::this_thread::sleep_for(std::chrono::seconds(limit + 1));
         } else if (res.text.find("You need 20 reputation points") != std::string::npos) {
             logger->error("Not enough rep to post {} ({})", rid, siteUrlMap[site]);
-            return;
+            return -1;
         } else if (res.text.find("This room has been frozen") != std::string::npos) {
             logger->error("Room {} ({}) is frozen", rid, siteUrlMap[site]);
-            return;
+            return -1;
         } else if (res.text.find("The room does not exist") != std::string::npos) {
             logger->error("Room {} ({}) doesn't exist", rid, siteUrlMap[site]);
-            return;
+            return -1;
         } else {
             logger->info("Sent {} to {} ({})", content, rid, siteUrlMap[site]);
-            return;
+            auto id = nlohmann::json::parse(res.text).value<long long>("id", -1);
+            return id;
         }
 
         count++;
     } while (count < 5);
+    return -1;
+}
+
+long long Room::reply(const ChatEvent &ev, const std::string &content) {
+    std::string idPrefix = ":" + std::to_string(ev.messageEvent.message_id);
+    return sendMessage(idPrefix + " " + content);
 }
 
 std::string Room::getWSUrl(const std::string& fkey) {

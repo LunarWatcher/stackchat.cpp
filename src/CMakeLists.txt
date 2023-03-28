@@ -1,6 +1,8 @@
 add_library(stackchat
     stackchat/StackChat.cpp
 
+    stackchat/chat/MultiLevelCommand.cpp
+
     stackchat/rooms/Room.cpp
 
     stackchat/web/MTSession.cpp

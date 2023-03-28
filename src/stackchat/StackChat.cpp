@@ -124,7 +124,7 @@ void StackChat::setCookies(const cpr::Response &res, StackSite site) {
     authSess.setCookies(cookies);
 }
 
-void StackChat::registerCommand(std::string commandName, CommandCallback func) {
+void StackChat::registerCommand(std::string commandName, std::shared_ptr<Command> func) {
     commandCallbacks[commandName] = func;
 }
 void StackChat::registerEventListener(ChatEvent::Code ev, EventCallback func) {
@@ -144,7 +144,11 @@ void StackChat::broadcast(Room& r, ChatEvent &ev) {
                 std::string arg = split.size() == 1 ? "" : split[1];
 
                 if (commandCallbacks.contains(cmd)) {
-                    commandCallbacks.at(cmd)(r, ev, arg);
+                    commandCallbacks.at(cmd)->onMessage(
+                        r,
+                        ev,
+                        stc::string::split(arg, " ")
+                    );
                 }
 
             }

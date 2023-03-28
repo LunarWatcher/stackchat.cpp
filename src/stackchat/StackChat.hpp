@@ -11,6 +11,7 @@
 #include "cpr/cookies.h"
 #include "cpr/response.h"
 #include "stackchat/Site.hpp"
+#include "stackchat/chat/Command.hpp"
 #include "stackchat/rooms/Room.hpp"
 #include "stackchat/rooms/StackSite.hpp"
 #include "stackchat/web/MTSession.hpp"
@@ -31,14 +32,13 @@ struct ChatConfig {
 };
 
 using EventCallback = std::function<void(Room&, const ChatEvent&)>;
-using CommandCallback = std::function<void(Room&, const ChatEvent&, const std::string& args)>;
 
 class StackChat {
 private:
     static inline auto logger = spdlog::stdout_color_mt("StackChat");
 
     std::map<ChatEvent::Code, std::vector<EventCallback>> eventListeners;
-    std::map<std::string, CommandCallback> commandCallbacks;
+    std::map<std::string, std::shared_ptr<Command>> commandCallbacks;
 public:
     std::map<StackSite, Site> sites;
     ChatConfig conf;
@@ -54,7 +54,7 @@ public:
 
     void sendTo(StackSite site, unsigned int rid, const std::string& content);
 
-    void registerCommand(std::string commandName, CommandCallback func);
+    void registerCommand(std::string commandName, std::shared_ptr<Command> cmd);
     void registerEventListener(ChatEvent::Code ev, EventCallback func);
 
     void broadcast(Room& r, ChatEvent& ev);

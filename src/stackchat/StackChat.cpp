@@ -175,7 +175,6 @@ void StackChat::sendToListeners(Room& r, ChatEvent &ev) {
     if (conf.prefix != "" && (ev.type == ChatEvent::Code::EDIT || ev.type == ChatEvent::Code::NEW_MESSAGE)) {
         auto& content = ev.messageEvent.content;
 
-        // TODO: Complex command structures (maybe not here, could maybe do a new class. Not sure, TBD)
         if (content.starts_with(conf.prefix)) {
             auto stripPrefix = content.substr(conf.prefix.size());
             if (stripPrefix.size() != 0) {

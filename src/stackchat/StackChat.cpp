@@ -169,6 +169,9 @@ void StackChat::registerEventListener(ChatEvent::Code ev, EventCallback func) {
 }
 // This is horribly named. Fucking hell
 void StackChat::broadcast(Room& r, ChatEvent &ev) {
+    if (conf.ignoreSelf && sites[r.site].uid == ev.user_id) {
+        return;
+    }
     if (conf.prefix != "" && (ev.type == ChatEvent::Code::EDIT || ev.type == ChatEvent::Code::NEW_MESSAGE)) {
         auto& content = ev.messageEvent.content;
 

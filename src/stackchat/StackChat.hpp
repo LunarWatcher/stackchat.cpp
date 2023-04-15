@@ -58,7 +58,7 @@ public:
     void registerCommand(std::string commandName, std::shared_ptr<Command> cmd);
     void registerEventListener(ChatEvent::Code ev, EventCallback func);
 
-    void broadcast(Room& r, ChatEvent& ev);
+    void sendToListeners(Room& r, ChatEvent& ev);
 
     std::string chatUrl(StackSite site) {
         return fmt::format("https://chat.{}", siteUrlMap.at(site));

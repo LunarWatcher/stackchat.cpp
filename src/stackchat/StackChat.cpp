@@ -168,7 +168,7 @@ void StackChat::registerEventListener(ChatEvent::Code ev, EventCallback func) {
     eventListeners[ev].push_back(func);
 }
 // This is horribly named. Fucking hell
-void StackChat::broadcast(Room& r, ChatEvent &ev) {
+void StackChat::sendToListeners(Room& r, ChatEvent &ev) {
     if (conf.ignoreSelf && sites[r.site].uid == ev.user_id) {
         return;
     }

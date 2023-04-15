@@ -33,7 +33,7 @@ Room::Room(StackChat* chat, StackSite site, unsigned int rid) : chat(chat), site
 
             for (auto& event : roomEvents.at("e")) {
                 ChatEvent evObj = event.get<ChatEvent>();
-                this->chat->broadcast(*this, evObj);
+                this->chat->sendToListeners(*this, evObj);
             }
 
         } else if (msg->type == ix::WebSocketMessageType::Error) {

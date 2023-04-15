@@ -17,6 +17,12 @@ int main() {
             .userAgent = "StackChatCppDemos/git (+https://github.com/LunarWatcher/stackchat.cpp)",
     });
 
+    // Listeners are registered with an event and a callback
+    // Unlike commands, they don't (currently) use classes, as there isn't as much of a need for them.
+    // Command structures have secondary uses, while listeners generally don't show up on most help systems.
+    // Essentially, there's not really an advantage to making these a class, aside potentially allowing code reuse
+    // (in the edge-case of a listener wanting to take NEW_MESSAGE and EDIT), though this in particular is a problem
+    // for future me :)
     chat.registerEventListener(stackchat::ChatEvent::Code::USER_JOIN, [](stackchat::Room& room, const stackchat::ChatEvent& ev) {
         room.sendMessage("Hello, " + ev.username);
     });

@@ -17,6 +17,15 @@ int main() {
             .userAgent = "StackChatCppDemos/git (+https://github.com/LunarWatcher/stackchat.cpp)",
     });
 
+    // Connecting to multiple sites in the network is trivial. Simply provide the site and the room ID, and the API
+    // library takes care of the rest.
+    //
+    // Login is automatically handled, if deemed necessary, when connecting to a room. This also helps simplify the code.
+    // Note that the bot needs to have an account on all sites it tries to join, or the join function will throw one of a number
+    // of exceptions that can occur as a result of a perceived bad login, or failed data acquisition.
+    //
+    // TL;DR: joining sites you don't have an account on will throw, but as long as you have the rep and accounts in order,
+    // everything will be fine.
     chat.join(stackchat::StackSite::STACKOVERFLOW, 1);
     chat.join(stackchat::StackSite::STACKEXCHANGE, 144870);
     chat.join(stackchat::StackSite::META_STACKEXCHANGE, 1696);

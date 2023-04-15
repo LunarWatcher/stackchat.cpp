@@ -1,5 +1,11 @@
-add_executable(sandbox-announcement src/SandboxAnnouncement.cpp)
-target_link_libraries(sandbox-announcement stackchat)
+function (demo_executable name file)
+    add_executable(${name} src/${file})
+    target_link_libraries(${name} stackchat)
+endfunction()
 
-add_executable(command-structures src/CommandStructures.cpp)
-target_link_libraries(command-structures stackchat)
+
+
+demo_executable(sandbox-announcement SandboxAnnouncement.cpp)
+demo_executable(command-structures CommandStructures.cpp)
+demo_executable(listeners ListenerDemo.cpp)
+demo_executable(full-cov FullNetworkCoverage.cpp)

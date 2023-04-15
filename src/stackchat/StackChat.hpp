@@ -41,6 +41,7 @@ private:
     std::map<std::string, std::shared_ptr<Command>> commandCallbacks;
 public:
     std::map<StackSite, Site> sites;
+
     ChatConfig conf;
     std::atomic<bool> isRunning{true};
 

@@ -70,6 +70,43 @@ void StackChat::login(StackSite site) {
 
     reloadFKey(site);
     logger->info("Successfully logged in to {}", siteUrlMap[site]);
+
+    logger->info("Scraping UID and username...");
+    // This is exceptionally lazy, but admittedly and in my biased opinion, bigbrain as fuck
+    // By requesting a bogus page, the regex used later is guaranteed to only find the currently logged-in user, because there are no other
+    // links that can interfere with the process.
+    auto frontPageGetRes = authSess.Get(cpr::Url("https://chat." + siteUrlMap[site] + "/fake-page-for-uid--stackchat-dot-cpp--login"));
+    setCookies(frontPageGetRes, site);
+    
+
+    const static std::regex userUIDScrape("<a href=\"/users/(\\d+)/.*?\" ", std::regex_constants::icase | std::regex_constants::optimize);
+    if (!std::regex_search(frontPageGetRes.text, match, userUIDScrape)) {
+        logger->error("Request target: {}", frontPageGetRes.url.str());
+        throw std::runtime_error("Failed to locate the UID. Has Stack's HTML changed again? :(");
+    }
+
+    std::string stringifiedUid = match[1];
+    sites[site].uid = std::stoi(stringifiedUid);
+
+    logger->info("Successfully found UID ({}). Scraping username...", stringifiedUid);
+
+    auto userPage = authSess.Get(cpr::Url("https://chat." + siteUrlMap[site] + "/users/" + match[1].str()));
+    if (userPage.status_code >= 400) {
+        logger->error("Link URL source: {}", frontPageGetRes.url.str());
+        throw std::runtime_error("Chat user page errored out in spite of existing. Has merge fuckery been involved?");
+    }
+
+    const static std::regex usernameScrape("<h1>(.*)</h1>", std::regex_constants::icase | std::regex_constants::optimize);
+    if (!std::regex_search(userPage.text, match, usernameScrape)) {
+        throw std::runtime_error("Failed to locate the username. Has Stack's HTML changed again? :(");
+    }
+
+    std::string username = match[1];
+    logger->info("Bot account IDed as {} ({})", username, stringifiedUid);
+
+    sites[site].username = username;
+
+    
 }
 
 void StackChat::join(StackSite site, unsigned int rid) {
@@ -128,9 +165,9 @@ void StackChat::registerCommand(std::string commandName, std::shared_ptr<Command
     commandCallbacks[commandName] = func;
 }
 void StackChat::registerEventListener(ChatEvent::Code ev, EventCallback func) {
-
+    eventListeners[ev].push_back(func);
 }
-
+// This is horribly named. Fucking hell
 void StackChat::broadcast(Room& r, ChatEvent &ev) {
     if (conf.prefix != "" && (ev.type == ChatEvent::Code::EDIT || ev.type == ChatEvent::Code::NEW_MESSAGE)) {
         auto& content = ev.messageEvent.content;
@@ -149,11 +186,13 @@ void StackChat::broadcast(Room& r, ChatEvent &ev) {
                         ev,
                         stc::string::split(arg, " ")
                     );
+                    return;
                 }
-
             }
         }
-
+    }
+    for (auto& listener : eventListeners[ev.type]) {
+        listener(r, ev);
     }
 }
 

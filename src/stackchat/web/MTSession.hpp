@@ -15,6 +15,7 @@ public:
 
     template <typename... Ts>
     cpr::Response Get(Ts&&... ts) {
+        wipeParams();
         std::lock_guard<std::mutex> lock(m);
         cpr::priv::set_option(sess, std::forward<Ts>(ts)...);
         
@@ -24,6 +25,7 @@ public:
 
     template <typename... Ts>
     cpr::Response Post(Ts&&... ts) {
+        wipeParams();
         std::lock_guard<std::mutex> lock(m);
         cpr::priv::set_option(sess, std::forward<Ts>(ts)...);
         
@@ -32,6 +34,7 @@ public:
     }
 
     void setCookies(cpr::Cookies& cookies);
+    void wipeParams();
 };
 
 }

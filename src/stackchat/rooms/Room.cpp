@@ -11,6 +11,8 @@
 // Temporary
 #include <iostream>
 
+#include "stc/StringUtil.hpp"
+
 namespace stackchat {
 
 Room::Room(StackChat* chat, StackSite site, unsigned int rid) : chat(chat), site(site), rid(rid) {
@@ -48,8 +50,78 @@ Room::Room(StackChat* chat, StackSite site, unsigned int rid) : chat(chat), site
     logger->info("Listening to room.");
 }
 
-long long Room::sendMessage(const std::string& content) {
+long long Room::performSendMessage(std::optional<ChatEvent> replyEvent,
+                                   const std::string& rawContent,
+                                   MessageType type,
+                                   MessageLengthPolicy lengthPolicy) {
+
     int count = 0;
+    std::string content;
+
+    switch (type) {
+    case MessageType::NORMAL: {
+        content = (replyEvent.has_value() ? ":" + std::to_string(replyEvent->messageEvent.message_id) + " " : "") + rawContent;
+
+        if (content.size() > 500
+                && content.find('\n') == std::string::npos) {
+            switch (lengthPolicy) {
+            case MessageLengthPolicy::BREAK: {
+                std::string c1 = content.substr(0, 500);
+                std::string c2 = content.substr(500);
+
+                performSendMessage(std::nullopt, c1, type, lengthPolicy);
+                // recursively send new messages
+                return performSendMessage(std::nullopt, c2, type, lengthPolicy);
+                } break;
+            case MessageLengthPolicy::NONE:
+                break;
+            case MessageLengthPolicy::INSERT_NEWLINE:
+                content += "\n.";
+                break;
+            case MessageLengthPolicy::FORCE_CODE:
+                return performSendMessage(std::nullopt, rawContent + "\n.", MessageType::CODE, lengthPolicy);
+            }
+        }
+        } break;
+    case MessageType::CODE: {
+        auto lines = stc::string::split(rawContent, "\n");
+        for (auto& line : lines) {
+            content += "    " + line + "\n";
+        }
+        if (content.size() > 500 && content.find('\n') == std::string::npos) {
+            if (lengthPolicy == MessageLengthPolicy::INSERT_NEWLINE) {
+                content += "\n.";
+            } else {
+                throw std::runtime_error("Message too long, and not set to auto-break.");
+            }
+        }
+        
+        } break;
+    case MessageType::QUOTE:
+        content = (replyEvent.has_value() ? ":" + std::to_string(replyEvent->messageEvent.message_id) + " " : "") + "> " + rawContent;
+
+        if (content.size() > 500 && content.find('\n') == std::string::npos) {
+            switch (lengthPolicy) {
+            case MessageLengthPolicy::BREAK: {
+                std::string c1 = content.substr(0, 500);
+                std::string c2 = content.substr(500);
+                
+                performSendMessage(replyEvent, c1, type, lengthPolicy);
+                return performSendMessage(std::nullopt, c2, type, lengthPolicy);
+                } break;
+            case MessageLengthPolicy::FORCE_CODE:
+                throw std::runtime_error("Unsupported for this message type.");
+            case MessageLengthPolicy::INSERT_NEWLINE:
+                content += "\n.";
+                break;
+            default:
+                // Silence the compiler
+                break;
+            }
+        }
+        break;
+    }
+
     do {
         auto res = sess.Post(
             cpr::Url{fmt::format("{}/chats/{}/messages/new", chat->chatUrl(site), rid)},
@@ -85,9 +157,13 @@ long long Room::sendMessage(const std::string& content) {
     return -1;
 }
 
-long long Room::reply(const ChatEvent &ev, const std::string &content) {
-    std::string idPrefix = ":" + std::to_string(ev.messageEvent.message_id);
-    return sendMessage(idPrefix + " " + content);
+long long Room::sendMessage(const std::string& rawContent, MessageType type, MessageLengthPolicy lengthPolicy) {
+    return performSendMessage(std::nullopt, rawContent, type, lengthPolicy);
+}
+
+long long Room::reply(const ChatEvent& ev, const std::string& rawContent, MessageType type, MessageLengthPolicy lengthPolicy) {
+
+    return performSendMessage(ev, rawContent, type, lengthPolicy);
 }
 
 std::string Room::getWSUrl(const std::string& fkey) {
@@ -105,10 +181,15 @@ std::string Room::getWSUrl(const std::string& fkey) {
     if (timeReq.status_code == 500) {
         throw std::runtime_error("Stack failed to return a timestamp: internal error (details unknown)");
     }
-
-    std::string time = std::to_string(nlohmann::json::parse(
+    auto timeJson = nlohmann::json::parse(
             timeReq.text
-    ).at("time").get<long long>());
+    );
+
+    if (!timeJson.contains("time")) {
+        throw std::runtime_error(fmt::format("Failed to find time. Received response: {}", timeReq.text));
+    }
+    
+    std::string time = std::to_string(timeJson.at("time").get<long long>());
 
     auto wsUrlReq = sess.Post(
         cpr::Url {fmt::format("https://chat.{}/ws-auth", siteUrlMap[site])},

@@ -11,10 +11,29 @@
 
 namespace stackchat {
 
+enum class MessageType {
+    NORMAL,
+    QUOTE,
+    CODE
+};
+
+enum class MessageLengthPolicy {
+    BREAK,
+    INSERT_NEWLINE,
+    FORCE_CODE,
+    NONE
+};
+
 class StackChat;
 class Room {
 private:
     std::shared_ptr<spdlog::logger> logger;
+
+    long long performSendMessage(
+        std::optional<ChatEvent> replyEvent,
+        const std::string& content,
+        MessageType type,
+        MessageLengthPolicy lengthPolicy);
 public:
     StackChat* chat;
     MTSession sess;
@@ -26,8 +45,14 @@ public:
 
     Room(StackChat* chat, StackSite site, unsigned int rid);
 
-    long long sendMessage(const std::string& content);
-    long long reply(const ChatEvent& ev, const std::string& content);
+    long long sendMessage(
+        const std::string& content,
+        MessageType type = MessageType::NORMAL,
+        MessageLengthPolicy lengthPolicy = MessageLengthPolicy::BREAK);
+    long long reply(
+        const ChatEvent& ev, const std::string& content, MessageType type = MessageType::NORMAL,
+        MessageLengthPolicy lengthPolicy = MessageLengthPolicy::INSERT_NEWLINE
+    );
 
     std::string getWSUrl(const std::string& fkey);
 };

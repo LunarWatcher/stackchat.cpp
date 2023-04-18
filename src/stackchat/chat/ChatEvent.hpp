@@ -14,7 +14,7 @@ struct ChatMessageEvent {
     long long target_user_id;
     long long parent_id;
 
-    bool show_parent; // Wtf?? 
+    bool show_parent; // Used for replies I think?
 };
 
 struct ChatEvent {

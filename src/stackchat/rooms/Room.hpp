@@ -29,11 +29,13 @@ class Room {
 private:
     std::shared_ptr<spdlog::logger> logger;
 
-    long long performSendMessage(
+    std::vector<long long> performSendMessage(
         std::optional<ChatEvent> replyEvent,
         const std::string& content,
         MessageType type,
         MessageLengthPolicy lengthPolicy);
+
+    std::string getWSUrl(const std::string& fkey);
 public:
     StackChat* chat;
     MTSession sess;
@@ -45,16 +47,26 @@ public:
 
     Room(StackChat* chat, StackSite site, unsigned int rid);
 
-    long long sendMessage(
+    /**
+     * Sends a message to this room.
+     */
+    std::vector<long long> sendMessage(
         const std::string& content,
         MessageType type = MessageType::NORMAL,
         MessageLengthPolicy lengthPolicy = MessageLengthPolicy::BREAK);
-    long long reply(
+
+    /**
+     * Replies to a message in this room.
+     *
+     * Note that it isn't checked whether the message replied to is actually in the current room.
+     * Sending replies in other rooms than the source room will make a non-functioning reply, likely
+     * displaying as the raw `:message_id_here` format.
+     */
+    std::vector<long long> reply(
         const ChatEvent& ev, const std::string& content, MessageType type = MessageType::NORMAL,
         MessageLengthPolicy lengthPolicy = MessageLengthPolicy::INSERT_NEWLINE
     );
 
-    std::string getWSUrl(const std::string& fkey);
 };
 
 }

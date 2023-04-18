@@ -50,7 +50,7 @@ Room::Room(StackChat* chat, StackSite site, unsigned int rid) : chat(chat), site
     logger->info("Listening to room.");
 }
 
-long long Room::performSendMessage(std::optional<ChatEvent> replyEvent,
+std::vector<long long> Room::performSendMessage(std::optional<ChatEvent> replyEvent,
                                    const std::string& rawContent,
                                    MessageType type,
                                    MessageLengthPolicy lengthPolicy) {
@@ -69,9 +69,11 @@ long long Room::performSendMessage(std::optional<ChatEvent> replyEvent,
                 std::string c1 = content.substr(0, 500);
                 std::string c2 = content.substr(500);
 
-                performSendMessage(std::nullopt, c1, type, lengthPolicy);
+                auto retVal = performSendMessage(std::nullopt, c1, type, lengthPolicy);
                 // recursively send new messages
-                return performSendMessage(std::nullopt, c2, type, lengthPolicy);
+                auto additionalIDs = performSendMessage(std::nullopt, c2, type, lengthPolicy);
+                retVal.insert(retVal.end(), additionalIDs.begin(), additionalIDs.end());
+                return retVal;
                 } break;
             case MessageLengthPolicy::NONE:
                 break;
@@ -106,8 +108,10 @@ long long Room::performSendMessage(std::optional<ChatEvent> replyEvent,
                 std::string c1 = content.substr(0, 500);
                 std::string c2 = content.substr(500);
                 
-                performSendMessage(replyEvent, c1, type, lengthPolicy);
-                return performSendMessage(std::nullopt, c2, type, lengthPolicy);
+                std::vector<long long> retVal = performSendMessage(replyEvent, c1, type, lengthPolicy);
+                auto additionalIDs = performSendMessage(std::nullopt, c2, type, lengthPolicy);
+                retVal.insert(retVal.end(), additionalIDs.begin(), additionalIDs.end());
+                return retVal;
                 } break;
             case MessageLengthPolicy::FORCE_CODE:
                 throw std::runtime_error("Unsupported for this message type.");
@@ -139,29 +143,29 @@ long long Room::performSendMessage(std::optional<ChatEvent> replyEvent,
             std::this_thread::sleep_for(std::chrono::seconds(limit + 1));
         } else if (res.text.find("You need 20 reputation points") != std::string::npos) {
             logger->error("Not enough rep to post {} ({})", rid, siteUrlMap[site]);
-            return -1;
+            return {-1};
         } else if (res.text.find("This room has been frozen") != std::string::npos) {
             logger->error("Room {} ({}) is frozen", rid, siteUrlMap[site]);
-            return -1;
+            return {-1};
         } else if (res.text.find("The room does not exist") != std::string::npos) {
             logger->error("Room {} ({}) doesn't exist", rid, siteUrlMap[site]);
-            return -1;
+            return {-1};
         } else {
             logger->info("Sent {} to {} ({})", content, rid, siteUrlMap[site]);
             auto id = nlohmann::json::parse(res.text).value<long long>("id", -1);
-            return id;
+            return {id};
         }
 
         count++;
     } while (count < 5);
-    return -1;
+    return {-1};
 }
 
-long long Room::sendMessage(const std::string& rawContent, MessageType type, MessageLengthPolicy lengthPolicy) {
+std::vector<long long> Room::sendMessage(const std::string& rawContent, MessageType type, MessageLengthPolicy lengthPolicy) {
     return performSendMessage(std::nullopt, rawContent, type, lengthPolicy);
 }
 
-long long Room::reply(const ChatEvent& ev, const std::string& rawContent, MessageType type, MessageLengthPolicy lengthPolicy) {
+std::vector<long long> Room::reply(const ChatEvent& ev, const std::string& rawContent, MessageType type, MessageLengthPolicy lengthPolicy) {
 
     return performSendMessage(ev, rawContent, type, lengthPolicy);
 }

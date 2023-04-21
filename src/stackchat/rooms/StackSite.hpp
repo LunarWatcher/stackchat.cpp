@@ -2,6 +2,7 @@
 
 #include <string>
 #include <map>
+#include <nlohmann/json.hpp>
 
 namespace stackchat {
 
@@ -16,5 +17,11 @@ inline std::map<StackSite, std::string> siteUrlMap {
     {StackSite::STACKEXCHANGE, "stackexchange.com"},
     {StackSite::META_STACKEXCHANGE, "meta.stackexchange.com"}
 };
+
+NLOHMANN_JSON_SERIALIZE_ENUM( StackSite, {
+    {StackSite::STACKOVERFLOW, "stackoverflow"},
+    {StackSite::STACKEXCHANGE, "stackexchange"},
+    {StackSite::META_STACKEXCHANGE, "metastackexchange"},
+})
 
 }

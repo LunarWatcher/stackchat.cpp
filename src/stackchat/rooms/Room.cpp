@@ -11,12 +11,16 @@
 // Temporary
 #include <iostream>
 
+#include "stackchat/rooms/StackSite.hpp"
 #include "stc/StringUtil.hpp"
 
 namespace stackchat {
 
 Room::Room(StackChat* chat, StackSite site, unsigned int rid) : chat(chat), site(site), rid(rid) {
-    logger = spdlog::stdout_color_mt("room-" + std::to_string(rid));
+    logger = spdlog::get("room-" + siteUrlMap[site] + "-" + std::to_string(rid));
+    if (logger == nullptr) {
+        logger = spdlog::stdout_color_mt("room-" + siteUrlMap[site] + "-" + std::to_string(rid));
+    }
     auto& siteInfo = chat->sites.at(site);
 
     sess.setCookies(siteInfo.cookies);

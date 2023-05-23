@@ -115,6 +115,9 @@ void StackChat::join(StackSite site, unsigned int rid) {
     }
     // TODO: check if joined already
 
+    if (sites.at(site).rooms.contains(rid)) {
+        return;
+    }
     std::shared_ptr<Room> room = std::make_shared<Room>(this, site, rid);
     sites.at(site).rooms[rid] = room;
 }

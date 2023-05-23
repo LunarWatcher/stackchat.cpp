@@ -24,4 +24,5 @@ NLOHMANN_JSON_SERIALIZE_ENUM( StackSite, {
     {StackSite::META_STACKEXCHANGE, "metastackexchange"},
 })
 
+
 }

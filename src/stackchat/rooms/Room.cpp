@@ -154,6 +154,9 @@ std::vector<long long> Room::performSendMessage(std::optional<ChatEvent> replyEv
         } else if (res.text.find("The room does not exist") != std::string::npos) {
             logger->error("Room {} ({}) doesn't exist", rid, siteUrlMap[site]);
             return {-1};
+        } else if (res.status_code != 200) {
+            logger->error("Stack errorred out for \"{}\" (HTTP {})", content, res.status_code);
+            return {-1};
         } else {
             logger->info("Sent {} to {} ({})", content, rid, siteUrlMap[site]);
             try {

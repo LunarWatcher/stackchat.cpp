@@ -58,7 +58,10 @@ std::vector<long long> Room::performSendMessage(std::optional<ChatEvent> replyEv
                                    const std::string& rawContent,
                                    MessageType type,
                                    MessageLengthPolicy lengthPolicy) {
-
+    if (rawContent.size() == 0) {
+        logger->error("Cannot send an empty message");
+        return {-1};
+    }
     int count = 0;
     std::string content;
 

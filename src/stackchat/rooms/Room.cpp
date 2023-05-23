@@ -156,8 +156,13 @@ std::vector<long long> Room::performSendMessage(std::optional<ChatEvent> replyEv
             return {-1};
         } else {
             logger->info("Sent {} to {} ({})", content, rid, siteUrlMap[site]);
-            auto id = nlohmann::json::parse(res.text).value<long long>("id", -1);
-            return {id};
+            try {
+                auto id = nlohmann::json::parse(res.text).value<long long>("id", -1);
+                return {id};
+            } catch (...) {
+                logger->error(res.text);
+                throw;
+            }
         }
 
         count++;

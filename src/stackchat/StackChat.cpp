@@ -54,7 +54,7 @@ void StackChat::login(StackSite site) {
     setCookies(loginReq, site);
 
     if (loginReq.status_code != 200) {
-        throw std::runtime_error("Login request failed (" + std::to_string(fkeyReq.status_code) + "): " + fkeyReq.text + "; " + fkeyReq.error.message);
+        throw std::runtime_error("Login request failed (" + std::to_string(loginReq.status_code) + "): " + loginReq.text + "; " + loginReq.error.message);
     }
     // Stupid system: check cookies to make sure we've actually logged in
     bool good = false;

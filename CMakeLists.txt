@@ -36,7 +36,7 @@ FetchContent_Declare(spdlog GIT_REPOSITORY https://github.com/gabime/spdlog
 FetchContent_MakeAvailable(spdlog)
 
 FetchContent_Declare(ixwebsocket GIT_REPOSITORY https://github.com/machinezone/IXWebSocket
-    GIT_TAG v11.4.3)
+    GIT_TAG v11.4.5)
 FetchContent_MakeAvailable(ixwebsocket)
 
 FetchContent_Declare(stc GIT_REPOSITORY https://github.com/LunarWatcher/stc)

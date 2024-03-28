@@ -28,6 +28,7 @@ class StackChat;
 class Room {
 private:
     std::shared_ptr<spdlog::logger> logger;
+    bool intentionalShutdown = false;
 
     std::vector<long long> performSendMessage(
         std::optional<ChatEvent> replyEvent,
@@ -66,6 +67,8 @@ public:
         const ChatEvent& ev, const std::string& content, MessageType type = MessageType::NORMAL,
         MessageLengthPolicy lengthPolicy = MessageLengthPolicy::INSERT_NEWLINE
     );
+
+    void leaveRoom();
 
 };
 

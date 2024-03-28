@@ -22,10 +22,17 @@ Room::Room(StackChat* chat, StackSite site, unsigned int rid) : chat(chat), site
         logger = spdlog::stdout_color_mt("room-" + siteUrlMap[site] + "-" + std::to_string(rid));
     }
     auto& siteInfo = chat->sites.at(site);
-
     sess.setCookies(siteInfo.cookies);
+
+    // Note to self: cookies don't need to be part of the websocket request, but the websocket URL needs to be refreshed
+    // if it ever closes
     webSocket.setUrl(getWSUrl(siteInfo.fkey));
-    webSocket.setExtraHeaders({{"Origin", chat->chatUrl(site)}});
+    webSocket.setExtraHeaders(
+        {
+            {"Origin", chat->chatUrl(site)}
+        }
+    );
+
     webSocket.setOnMessageCallback([this](const ix::WebSocketMessagePtr& msg) {
         if (msg->type == ix::WebSocketMessageType::Message) {
             nlohmann::json ev = nlohmann::json::parse(msg->str);
@@ -44,11 +51,16 @@ Room::Room(StackChat* chat, StackSite site, unsigned int rid) : chat(chat), site
 
         } else if (msg->type == ix::WebSocketMessageType::Error) {
             logger->error("Error occurred: {}", msg->errorInfo.reason);
+        } else if (msg->type == ix::WebSocketMessageType::Close) {
+            logger->error("Socket closed in room {}", this->rid);
+            // If not intentionally shutting down, get a new URL and reconnect
+            // I have no idea, if this is going to work or not, so I'm gonna have to monitor this system.
+            if (!intentionalShutdown) {
+                webSocket.setUrl(getWSUrl(this->chat->sites.at(this->site).fkey));
+                webSocket.start();
+            }
         }
     });
-    webSocket.setMinWaitBetweenReconnectionRetries(20000); // Note: in millis
-    // TODO: figure out if I have to disable automatic reconnects or not.
-    // Really hinges on whether the URL remains valid or not. Could probably check what chatexchange does
     webSocket.start();
 
     logger->info("Listening to room.");
@@ -227,5 +239,11 @@ std::string Room::getWSUrl(const std::string& fkey) {
         .at("url").get<std::string>() + "?l=" + time;
 }
 
+void Room::leaveRoom() {
+    this->intentionalShutdown = true;
+    // Not sure if this is required, but might as well
+    this->webSocket.disableAutomaticReconnection();
+    this->webSocket.close();
+}
 
 }

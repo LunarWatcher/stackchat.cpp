@@ -30,6 +30,8 @@ private:
     std::shared_ptr<spdlog::logger> logger;
     bool intentionalShutdown = false;
 
+    std::chrono::system_clock::time_point lastSocketMessage = std::chrono::system_clock::now();
+
     std::vector<long long> performSendMessage(
         std::optional<ChatEvent> replyEvent,
         const std::string& content,
@@ -69,6 +71,12 @@ public:
     );
 
     void leaveRoom();
+
+    /**
+     * Checks if the chatroom socket needs to be restarted.
+     * Should only be called by the daemon in StackChat.
+     */
+    void checkRevive();
 
 };
 

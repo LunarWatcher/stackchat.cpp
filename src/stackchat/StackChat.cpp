@@ -1,6 +1,7 @@
 #include "StackChat.hpp"
 #include "stackchat/rooms/StackSite.hpp"
 
+#include <chrono>
 #include <regex>
 #include <nlohmann/json.hpp>
 #include <ixwebsocket/IXNetSystem.h>
@@ -13,8 +14,44 @@ StackChat::StackChat(const ChatConfig& conf) : conf(conf) {
     if (conf.email.size() == 0 || conf.password.size() == 0) {
         throw std::runtime_error("Misconfiguration: empty email and/or password");
     }
+    recoveryRunner = std::thread(std::bind(&StackChat::recoverDeadSockets, this));
 
     ix::initNetSystem();
+}
+
+StackChat::StackChat(StackChat&& src) 
+    : eventListeners(std::move(src.eventListeners)),
+      commandCallbacks(std::move(src.commandCallbacks)),
+      // The recovery runner has to be fully regenerated, because the function
+      // call binds `this`, which is about to be invalid in `src`
+      recoveryRunner(std::bind(&StackChat::recoverDeadSockets, this)),
+      conf(std::move(src.conf)),
+      sites(std::move(src.sites)) {
+    // Kill the thread; should be done in the destructor, but this should help make sure nothing
+    // weird happens.
+    // It still can, but we're talking about a very specific edge-case where the move constructor is
+    // called at roughly the same time as the thread wakes up.
+    // This requires very specific circumstances to ever happen, and is considered a problem caused
+    // by garbage consumer code. 
+    src.isRunning = false;
+    src.recoveryRunner.join();
+}
+
+StackChat::~StackChat() {
+    isRunning = false;
+    recoveryRunner.join();
+}
+
+void StackChat::recoverDeadSockets() {
+    while (isRunning) {
+        for (auto& [_, site] : this->sites) {
+            for (auto& [_, room] : site.rooms) {
+                room->checkRevive();
+            }
+        }
+
+        std::this_thread::sleep_for(std::chrono::minutes(1));
+    }
 }
 
 

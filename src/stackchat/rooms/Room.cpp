@@ -4,12 +4,16 @@
 #include "cpr/cprtypes.h"
 #include "cpr/verbose.h"
 #include "fmt/core.h"
+#include "ixwebsocket/IXWebSocketCloseConstants.h"
+#include "ixwebsocket/IXWebSocketMessage.h"
+#include "ixwebsocket/IXWebSocketMessageType.h"
 #include "nlohmann/json.hpp"
 #include "spdlog/sinks/stdout_color_sinks.h"
 #include "stackchat/StackChat.hpp"
 #include "stackchat/chat/ChatEvent.hpp"
 // Temporary
 #include <iostream>
+#include <chrono>
 
 #include "stackchat/rooms/StackSite.hpp"
 #include "stc/StringUtil.hpp"
@@ -34,6 +38,10 @@ Room::Room(StackChat* chat, StackSite site, unsigned int rid) : chat(chat), site
     );
 
     webSocket.setOnMessageCallback([this](const ix::WebSocketMessagePtr& msg) {
+        if (msg->type == ix::WebSocketMessageType::Message || msg->type == ix::WebSocketMessageType::Open) {
+            lastSocketMessage = std::chrono::system_clock::now();
+        }
+
         if (msg->type == ix::WebSocketMessageType::Message) {
             nlohmann::json ev = nlohmann::json::parse(msg->str);
             if (!ev.contains("r" + std::to_string(this->rid))) {
@@ -49,18 +57,24 @@ Room::Room(StackChat* chat, StackSite site, unsigned int rid) : chat(chat), site
                 this->chat->sendToListeners(*this, evObj);
             }
 
-        } else if (msg->type == ix::WebSocketMessageType::Error) {
-            logger->error("Error occurred: {}", msg->errorInfo.reason);
-        } else if (msg->type == ix::WebSocketMessageType::Close) {
-            logger->error("Socket closed in room {}", this->rid);
+        } else if (msg->type == ix::WebSocketMessageType::Close || msg->type == ix::WebSocketMessageType::Error) {
+            logger->warn("Socket closed in room {}", this->rid);
+            if (msg->type == ix::WebSocketMessageType::Error) {
+                logger->error("Socket also closed abnormally. Error message: {}", msg->errorInfo.reason);
+            }
             // If not intentionally shutting down, get a new URL and reconnect
             // I have no idea, if this is going to work or not, so I'm gonna have to monitor this system.
             if (!intentionalShutdown) {
+                spdlog::info("Getting new URL and reconnecting...");
                 webSocket.setUrl(getWSUrl(this->chat->sites.at(this->site).fkey));
                 webSocket.start();
             }
+        } else if (msg->type == ix::WebSocketMessageType::Open) {
+            logger->info("Connected to room {}", this->rid);
         }
     });
+    // I'm not sure if this makes sense or not, seeing as the URL has to be remade
+    webSocket.setMinWaitBetweenReconnectionRetries(20000);
     webSocket.start();
 
     logger->info("Listening to room.");
@@ -244,6 +258,19 @@ void Room::leaveRoom() {
     // Not sure if this is required, but might as well
     this->webSocket.disableAutomaticReconnection();
     this->webSocket.close();
+}
+
+void Room::checkRevive() {
+    auto delta = std::chrono::system_clock::now() - this->lastSocketMessage;
+    if (delta >= std::chrono::minutes(5)) {
+        spdlog::warn("The socket has not received a message in at least 5 minutes. Assuming quiet death and reconnecting...");
+        // close on the client side still triggers the close function in the websocket callback, which handles
+        // reconnection.
+        this->webSocket.close(
+            ix::WebSocketCloseConstants::kAbnormalCloseCode,
+            ix::WebSocketCloseConstants::kPingTimeoutMessage
+        );
+    }
 }
 
 }

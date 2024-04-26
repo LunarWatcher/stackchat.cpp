@@ -29,6 +29,20 @@ struct ChatConfig {
 
     bool ignoreSelf = true;
 
+    /**
+     * Controls whether or not to enable a thread that handles quiet websocket death, an annoying quirk of chat.
+     * Quiet websocket death happens because chat is beta software that hasn't been touched in a decade. The
+     * consequence is that no data makes it through the websocket, but the socket still remains active.
+     * It's probably somehow left in a semi-detached state on Stack's side.
+     * Anyway, because the socket doesn't actually die, error management from socket disconnection can't kick in.
+     * 
+     * To deal with this, StackChat has a built-in quiet death recovery system. 
+     *
+     * You probably only want to set this to false un unit tests or if
+     * doing other obscure shit.
+     */
+    bool reviveRunner = true;
+
 };
 
 using EventCallback = std::function<void(Room&, const ChatEvent&)>;
@@ -39,6 +53,10 @@ private:
 
     std::map<ChatEvent::Code, std::vector<EventCallback>> eventListeners;
     std::map<std::string, std::shared_ptr<Command>> commandCallbacks;
+
+    std::thread recoveryRunner;
+
+    void recoverDeadSockets();
 public:
     std::map<StackSite, Site> sites;
 
@@ -46,6 +64,9 @@ public:
     std::atomic<bool> isRunning{true};
 
     StackChat(const ChatConfig& conf);
+    StackChat(const StackChat& src);
+    StackChat(StackChat&& src);
+    ~StackChat();
 
     void login(StackSite site);
     void join(StackSite site, unsigned int rid);

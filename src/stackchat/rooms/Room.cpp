@@ -65,7 +65,7 @@ Room::Room(StackChat* chat, StackSite site, unsigned int rid) : chat(chat), site
             // If not intentionally shutting down, get a new URL and reconnect
             // I have no idea, if this is going to work or not, so I'm gonna have to monitor this system.
             if (!intentionalShutdown) {
-                spdlog::info("Getting new URL and reconnecting...");
+                logger->info("Getting new URL and reconnecting...");
                 webSocket.setUrl(getWSUrl(this->chat->sites.at(this->site).fkey));
                 webSocket.start();
             }
@@ -263,7 +263,7 @@ void Room::leaveRoom() {
 void Room::checkRevive() {
     auto delta = std::chrono::system_clock::now() - this->lastSocketMessage;
     if (delta >= std::chrono::minutes(5)) {
-        spdlog::warn("The socket has not received a message in at least 5 minutes. Assuming quiet death and reconnecting...");
+        logger->warn("The socket has not received a message in at least 5 minutes. Assuming quiet death and reconnecting...");
         // close on the client side still triggers the close function in the websocket callback, which handles
         // reconnection.
         this->webSocket.close(

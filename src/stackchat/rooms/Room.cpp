@@ -162,10 +162,9 @@ std::vector<long long> Room::performSendMessage(std::optional<ChatEvent> replyEv
     do {
         auto res = sess.Post(
             cpr::Url{fmt::format("{}/chats/{}/messages/new", chat->chatUrl(site), rid)},
-            cpr::Payload{
-                {"fkey", chat->sites[site].fkey},
+            fkeyed(cpr::Payload{
                 {"text", content}
-            }
+            })
         );
         if (res.text.find("You can perform this action again in") != std::string::npos) {
             int inPos = res.text.find(" in ") + 3;
@@ -213,14 +212,13 @@ std::vector<long long> Room::reply(const ChatEvent& ev, const std::string& rawCo
 
 std::string Room::getWSUrl(const std::string& fkey) {
     auto timeReq = sess.Post(
-        cpr::Payload{
+        fkeyed(cpr::Payload{
             {"since", "0"},
             {"mode", "Messages"},
-            {"msgCount", "100"},
-            {"fkey", fkey}
-        },
+            {"msgCount", "100"}
+        }),
         chat->conf.userAgent,
-        cpr::Url(fmt::format("https://chat.{}/chats/{}/events", siteUrlMap[site], rid))
+        cpr::Url(fmt::format("https://chat.{}/chats/{}/events", site, rid))
     );
 
     if (timeReq.status_code == 500) {
@@ -237,11 +235,10 @@ std::string Room::getWSUrl(const std::string& fkey) {
     std::string time = std::to_string(timeJson.at("time").get<long long>());
 
     auto wsUrlReq = sess.Post(
-        cpr::Url {fmt::format("https://chat.{}/ws-auth", siteUrlMap[site])},
-        cpr::Payload {
-            {"fkey", fkey},
+        cpr::Url {fmt::format("https://chat.{}/ws-auth", site)},
+        fkeyed(cpr::Payload {
             {"roomid", std::to_string(rid)}
-        }, 
+        }), 
         chat->conf.userAgent);
     
     if (wsUrlReq.status_code == 404) {
@@ -273,4 +270,24 @@ void Room::checkRevive() {
     }
 }
 
+bool Room::setUserAccess(AccessLevel level, long long userId) {
+    auto res = cpr::Post(
+        cpr::Url{
+            fmt::format("https://{}/rooms/setuseraccess/{}", this->site, this->rid)
+        },
+        fkeyed(
+            {
+                {"aclUserId", std::to_string(userId)},
+                {"userAccess", accessToString.at(level)}
+            }
+        )
+    );
+
+    return res.status_code < 400;
+}
+
+cpr::Payload Room::fkeyed(cpr::Payload p) {
+    p.Add({"fkey", chat->getFkey(this->site)});
+    return p;
+}
 }

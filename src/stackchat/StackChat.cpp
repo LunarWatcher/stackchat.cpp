@@ -238,4 +238,8 @@ void StackChat::sendToListeners(Room& r, ChatEvent &ev) {
     }
 }
 
+std::string StackChat::getFkey(StackSite site) {
+    return this->sites.at(site).fkey;
+}
+
 }

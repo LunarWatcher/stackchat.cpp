@@ -1,5 +1,6 @@
 #pragma once
 
+#include "cpr/payload.h"
 #include "spdlog/logger.h"
 #include "stackchat/rooms/StackSite.hpp"
 #include "stackchat/web/MTSession.hpp"
@@ -40,6 +41,21 @@ private:
 
     std::string getWSUrl(const std::string& fkey);
 public:
+
+    enum class AccessLevel {
+        NONE,
+        READ,
+        READWRITE,
+        OWNER
+    };
+    static inline std::map<AccessLevel, std::string> accessToString {
+        {AccessLevel::NONE, "remove"},
+        {AccessLevel::READ, "read"},
+        {AccessLevel::READWRITE, "read-write"},
+        {AccessLevel::OWNER, "owner"},
+    };
+
+
     StackChat* chat;
     MTSession sess;
 
@@ -57,6 +73,7 @@ public:
         const std::string& content,
         MessageType type = MessageType::NORMAL,
         MessageLengthPolicy lengthPolicy = MessageLengthPolicy::BREAK);
+
 
     /**
      * Replies to a message in this room.
@@ -78,6 +95,12 @@ public:
      */
     void checkRevive();
 
+    bool setUserAccess(AccessLevel level, long long userId);
+
+    /**
+     * Utility for adding an fkey to a payload
+     */
+    cpr::Payload fkeyed(cpr::Payload p);
 };
 
 }

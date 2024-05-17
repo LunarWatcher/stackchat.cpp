@@ -1,5 +1,6 @@
 #pragma once
 
+#include "fmt/format.h"
 #include <string>
 #include <map>
 #include <nlohmann/json.hpp>
@@ -26,3 +27,14 @@ NLOHMANN_JSON_SERIALIZE_ENUM( StackSite, {
 
 
 }
+
+template <>
+struct fmt::formatter<stackchat::StackSite> {
+    constexpr auto parse(fmt::format_parse_context& ctx) -> decltype(ctx.begin()) {
+        return ctx.begin();
+    }
+
+    constexpr auto format(const stackchat::StackSite& site, format_context& ctx) const {
+        return fmt::format_to(ctx.out(), "{}", stackchat::siteUrlMap.at(site));
+    };
+};

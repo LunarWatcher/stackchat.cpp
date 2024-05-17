@@ -81,6 +81,14 @@ public:
 
     void sendToListeners(Room& r, ChatEvent& ev);
 
+    /**
+     * Gets the fkey for a given StackSite.
+     *
+     * Note that if you're not logged in, this function will throw. Do not use unless you've logged into the site
+     * first.
+     */
+    std::string getFkey(StackSite site);
+
     std::string chatUrl(StackSite site) {
         return fmt::format("https://chat.{}", siteUrlMap.at(site));
     }

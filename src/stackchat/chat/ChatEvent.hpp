@@ -19,6 +19,8 @@ struct ChatMessageEvent {
 
 struct ChatEvent {
 public:
+    static inline std::string CONTENT_ACCESS_REQUEST = "Access now request";
+
     enum class Code {
         /**
          * Internal control
@@ -69,11 +71,13 @@ public:
     std::string room_name;
 
     /**
-     * Only populated for message events.
-     * May be present in other events, but this is not a guarantee.
+     * Contains some message-specific events.
+     *
+     * Note that some or all the fields may not be populated depending on the type of event.
      */
     ChatMessageEvent messageEvent;
 
+    bool isAccessRequest();
 };
 
 extern void from_json(const nlohmann::json& j, ChatEvent& ev);

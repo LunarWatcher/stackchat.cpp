@@ -77,7 +77,7 @@ public:
      */
     ChatMessageEvent messageEvent;
 
-    bool isAccessRequest();
+    bool isAccessRequest() const;
 };
 
 extern void from_json(const nlohmann::json& j, ChatEvent& ev);

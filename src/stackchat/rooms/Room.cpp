@@ -276,6 +276,13 @@ void Room::deleteMessages(const std::vector<long long>& messages) {
             cpr::Url{fmt::format("https://{}/messages/{}/delete", site, message)},
             fkeyed({})
         );
+        if (res.status_code >= 400) {
+            spdlog::error("Stack failed to delete message (ID {}) (HTTP {}): {}", message, res.status_code, res.text);
+        } else {
+            if (res.text != "\"ok\"" && res.text != "\"This message has already been deleted\"") {
+                spdlog::error("Stack failed to delete message (ID {}): {}", message, res.text);
+            }
+        }
     }
 }
 
@@ -294,7 +301,8 @@ void Room::deleteMessages(const std::vector<long long>& messages, std::chrono::s
     }
 
     // This feels so fucking dirty
-    std::thread([this, messages]() {
+    std::thread([this, messages, delay]() {
+        std::this_thread::sleep_for(delay);
         this->deleteMessages(messages);
     }).detach();
 }

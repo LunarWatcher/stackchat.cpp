@@ -78,6 +78,14 @@ public:
     ChatMessageEvent messageEvent;
 
     bool isAccessRequest() const;
+    /**
+     * Returns the username without spaces. The result of this function includes an @ for pinging,
+     * so there's no need to prefix one.
+     *
+     * Note that this function only returns a usable result of the username field is well-defined
+     * for the event.
+     */
+    std::string getPing() const;
 };
 
 extern void from_json(const nlohmann::json& j, ChatEvent& ev);

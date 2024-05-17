@@ -235,7 +235,7 @@ std::string Room::getWSUrl(const std::string& fkey) {
     std::string time = std::to_string(timeJson.at("time").get<long long>());
 
     auto wsUrlReq = sess.Post(
-        cpr::Url {fmt::format("https://chat.{}/ws-auth", site)},
+        cpr::Url {fmt::format("{:#c}/ws-auth", site)},
         fkeyed(cpr::Payload {
             {"roomid", std::to_string(rid)}
         }), 
@@ -273,16 +273,9 @@ void Room::checkRevive() {
 void Room::deleteMessages(const std::vector<long long>& messages) {
     for (auto& message : messages) {
         auto res = sess.Post(
-            cpr::Url{fmt::format("https://{}/messages/{}/delete", site, message)},
+            cpr::Url{fmt::format("{:#c}/messages/{}/delete", site, message)},
             fkeyed({})
         );
-        if (res.status_code >= 400) {
-            spdlog::error("Stack failed to delete message (ID {}) (HTTP {}): {}", message, res.status_code, res.text);
-        } else {
-            if (res.text != "\"ok\"" && res.text != "\"This message has already been deleted\"") {
-                spdlog::error("Stack failed to delete message (ID {}): {}", message, res.text);
-            }
-        }
     }
 }
 
@@ -301,8 +294,7 @@ void Room::deleteMessages(const std::vector<long long>& messages, std::chrono::s
     }
 
     // This feels so fucking dirty
-    std::thread([this, messages, delay]() {
-        std::this_thread::sleep_for(delay);
+    std::thread([this, messages]() {
         this->deleteMessages(messages);
     }).detach();
 }
@@ -310,7 +302,7 @@ void Room::deleteMessages(const std::vector<long long>& messages, std::chrono::s
 bool Room::setUserAccess(AccessLevel level, long long userId) {
     auto res = sess.Post(
         cpr::Url{
-            fmt::format("https://{}/rooms/setuseraccess/{}", this->site, this->rid)
+            fmt::format("{:#c}/rooms/setuseraccess/{}", site, this->rid)
         },
         fkeyed(
             {
@@ -319,8 +311,14 @@ bool Room::setUserAccess(AccessLevel level, long long userId) {
             }
         )
     );
+    spdlog::info("{}", res.text);
 
-    return res.status_code < 400;
+    bool success = res.status_code < 400;
+    if (!success) {
+        spdlog::error("Failed to set user access: {}", res.text);
+    }
+
+    return success;
 }
 
 cpr::Payload Room::fkeyed(cpr::Payload p) {

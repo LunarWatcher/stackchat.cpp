@@ -270,8 +270,37 @@ void Room::checkRevive() {
     }
 }
 
+void Room::deleteMessages(const std::vector<long long>& messages) {
+    for (auto& message : messages) {
+        auto res = sess.Post(
+            cpr::Url{fmt::format("https://{}/messages/{}/delete", site, message)},
+            fkeyed({})
+        );
+    }
+}
+
+void Room::deleteMessages(const std::vector<long long>& messages, std::chrono::seconds delay) {
+    if (delay <= std::chrono::seconds(0)) {
+        // If the delay is less than or equal to 0, delete immediately
+        deleteMessages(messages);
+        return;
+    } else if (delay >= std::chrono::seconds(110)) {
+        // If the delay is >= 110s, set to 110s.
+        // Strictly speaking, the window to delete is 120 seconds, but due to rate limits, capping it at
+        // 110 is better for ensuring the message actually goes away.
+        // This is important for the comment archive, one of the currently biggest applications for this
+        // system.
+        delay = std::chrono::seconds(110);
+    }
+
+    // This feels so fucking dirty
+    std::thread([this, messages]() {
+        this->deleteMessages(messages);
+    }).detach();
+}
+
 bool Room::setUserAccess(AccessLevel level, long long userId) {
-    auto res = cpr::Post(
+    auto res = sess.Post(
         cpr::Url{
             fmt::format("https://{}/rooms/setuseraccess/{}", this->site, this->rid)
         },

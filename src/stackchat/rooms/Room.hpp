@@ -87,6 +87,9 @@ public:
         MessageLengthPolicy lengthPolicy = MessageLengthPolicy::INSERT_NEWLINE
     );
 
+    void deleteMessages(const std::vector<long long>& messages);
+    void deleteMessages(const std::vector<long long>& messages, std::chrono::seconds delay);
+
     void leaveRoom();
 
     /**

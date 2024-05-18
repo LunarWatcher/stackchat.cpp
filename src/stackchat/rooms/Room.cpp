@@ -294,7 +294,8 @@ void Room::deleteMessages(const std::vector<long long>& messages, std::chrono::s
     }
 
     // This feels so fucking dirty
-    std::thread([this, messages]() {
+    std::thread([this, messages, delay]() {
+        std::this_thread::sleep_for(delay);
         this->deleteMessages(messages);
     }).detach();
 }

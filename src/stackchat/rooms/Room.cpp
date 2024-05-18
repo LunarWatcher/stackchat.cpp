@@ -315,7 +315,7 @@ bool Room::setUserAccess(AccessLevel level, long long userId) {
 
     bool success = res.status_code < 400;
     if (!success) {
-        spdlog::error("Failed to set user access: {}", res.text);
+        logger->error("Failed to set user access: {}", res.text);
     }
 
     return success;

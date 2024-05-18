@@ -50,7 +50,7 @@ public:
     };
     static inline std::map<AccessLevel, std::string> accessToString {
         {AccessLevel::NONE, "remove"},
-        {AccessLevel::READ, "read"},
+        {AccessLevel::READ, "read-only"},
         {AccessLevel::READWRITE, "read-write"},
         {AccessLevel::OWNER, "owner"},
     };

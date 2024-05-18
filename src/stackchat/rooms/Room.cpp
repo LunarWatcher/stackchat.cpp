@@ -312,7 +312,6 @@ bool Room::setUserAccess(AccessLevel level, long long userId) {
             }
         )
     );
-    spdlog::info("{}", res.text);
 
     bool success = res.status_code < 400;
     if (!success) {

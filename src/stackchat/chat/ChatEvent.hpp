@@ -77,6 +77,17 @@ public:
      */
     ChatMessageEvent messageEvent;
 
+    /**
+     * Internal control variable; indicates whether or not the message was processed as a command.
+     * This is only set to true if ev.type == ChatEvent::Code::EDIT or NEW_MESSAGE,
+     * and it starts with the prefix.
+     *
+     * Note that @mentions result in two events (PING and NEW_MESSAGE (or EDIT)),
+     * and _might_ result in 3 if it's also a reply
+     *
+     */
+    bool processedAsCommand = false;
+
     bool isAccessRequest() const;
     /**
      * Returns the username without spaces. The result of this function includes an @ for pinging,

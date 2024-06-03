@@ -142,6 +142,9 @@ void StackChat::login(StackSite site) {
     logger->info("Bot account IDed as {} ({})", username, stringifiedUid);
 
     sites[site].username = username;
+    std::string pingUsername = username;
+    stc::string::replaceAll(pingUsername, " ", "");
+    sites[site].pingUsername = pingUsername;
 
     
 }
@@ -209,27 +212,32 @@ void StackChat::registerEventListener(ChatEvent::Code ev, EventCallback func) {
 }
 // This is horribly named. Fucking hell
 void StackChat::sendToListeners(Room& r, ChatEvent &ev) {
-    if (conf.ignoreSelf && sites[r.site].uid == ev.user_id) {
+    if (conf.ignoreSelf && sites.at(r.site).uid == ev.user_id) {
         return;
     }
-    if (conf.prefix != "" && (ev.type == ChatEvent::Code::EDIT || ev.type == ChatEvent::Code::NEW_MESSAGE)) {
+    if (ev.type == ChatEvent::Code::EDIT || ev.type == ChatEvent::Code::NEW_MESSAGE) {
         auto& content = ev.messageEvent.content;
 
-        if (content.starts_with(conf.prefix)) {
-            auto stripPrefix = content.substr(conf.prefix.size());
-            if (stripPrefix.size() != 0) {
-                std::vector<std::string> split = stc::string::split(stripPrefix, ' ', 1);
-                auto cmd = split[0];
-                std::string arg = split.size() == 1 ? "" : split[1];
+        std::string stripPrefix = "";
 
-                if (commandCallbacks.contains(cmd)) {
-                    commandCallbacks.at(cmd)->onMessage(
-                        r,
-                        ev,
-                        stc::string::split(arg, " ")
-                    );
-                    return;
-                }
+        if (conf.prefix != "" && content.starts_with(conf.prefix)
+        ) {
+            stripPrefix = content.substr(conf.prefix.size());
+        } else if (conf.pingIsPrefix && content.starts_with("@" + sites.at(r.site).pingUsername)) {
+            stripPrefix = content.substr(sites.at(r.site).pingUsername.size() + 2); // +2 for the @ and the following space
+        }
+        if (stripPrefix.size() != 0) {
+            std::vector<std::string> split = stc::string::split(stripPrefix, ' ', 1);
+            auto cmd = split[0];
+            std::string arg = split.size() == 1 ? "" : split[1];
+
+            if (commandCallbacks.contains(cmd)) {
+                commandCallbacks.at(cmd)->onMessage(
+                    r,
+                    ev,
+                    stc::string::split(arg, " ")
+                );
+                return;
             }
         }
     }

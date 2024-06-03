@@ -33,9 +33,9 @@ int main() {
 
     stackchat::StackChat chat({
         .email = email,
-            .password = password,
-            .prefix = "~", // Required for command functionality. Defaults to nothing, which will disable commands
-            .userAgent = "StackChatCppDemos/git (+https://github.com/LunarWatcher/stackchat.cpp)",
+        .password = password,
+        .prefix = "~", // Required for command functionality. Defaults to nothing, which will disable commands
+        .userAgent = "StackChatCppDemos/git (+https://github.com/LunarWatcher/stackchat.cpp)",
     });
 
     // A MultiLevelCommand is just a utility that wraps other commands. It can contain a command for the current level (see its documentation),

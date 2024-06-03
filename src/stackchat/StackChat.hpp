@@ -25,6 +25,8 @@ struct ChatConfig {
     std::string password;
 
     std::string prefix = "";
+    bool pingIsPrefix = true;
+
     cpr::UserAgent userAgent = "StackChatCppUnannouncedUser/git";
 
     bool ignoreSelf = true;

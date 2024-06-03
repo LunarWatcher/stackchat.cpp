@@ -14,6 +14,7 @@ struct Site {
 
     int uid;
     std::string username;
+    std::string pingUsername;
 
     std::map<unsigned int, std::shared_ptr<Room>> rooms;
 

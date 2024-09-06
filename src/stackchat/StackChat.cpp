@@ -130,6 +130,9 @@ void StackChat::login(StackSite site) {
     auto userPage = authSess.Get(cpr::Url("https://chat." + siteUrlMap[site] + "/users/" + match[1].str()));
     if (userPage.status_code >= 400) {
         logger->error("Link URL source: {}", frontPageGetRes.url.str());
+        if (userPage.status_code == 429) {
+            logger->error("It's motherfucking CloudFlare again! status_code == 429, response: {}", frontPageGetRes.text);
+        }
         throw std::runtime_error("Chat user page errored out in spite of existing. Has merge fuckery been involved?");
     }
 

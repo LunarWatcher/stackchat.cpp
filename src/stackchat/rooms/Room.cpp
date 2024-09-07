@@ -183,16 +183,16 @@ std::vector<long long> Room::performSendMessage(std::optional<ChatEvent> replyEv
             logger->error("Room {} ({}) doesn't exist", rid, siteUrlMap[site]);
             return {-1};
         } else if (res.status_code != 200) {
-            logger->error("Stack errorred out for \"{}\" (HTTP {})", content, res.status_code);
+            logger->error("Stack errorred out for \"{}\" (HTTP {}): {}", content, res.status_code, res.text);
             return {-1};
         } else {
-            logger->info("Sent {} to {} ({})", content, rid, siteUrlMap[site]);
             try {
                 auto id = nlohmann::json::parse(res.text).value<long long>("id", -1);
+                logger->info("Sent {} to {} ({})", content, rid, siteUrlMap[site]);
                 return {id};
             } catch (...) {
-                logger->error(res.text);
-                throw;
+                logger->warn("Message eaten by chat anti-duplication");
+                return {-1};
             }
         }
 
@@ -230,6 +230,8 @@ std::string Room::getWSUrl(const std::string& fkey) {
 
     if (!timeJson.contains("time")) {
         throw std::runtime_error(fmt::format("Failed to find time. Received response: {}", timeReq.text));
+    } else if (timeJson.at("time").is_null()) {
+        timeJson["time"] = 9999999999ll;
     }
     
     std::string time = std::to_string(timeJson.at("time").get<long long>());
